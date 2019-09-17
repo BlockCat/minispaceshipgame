@@ -33,12 +33,28 @@ impl SimpleState for MyState {
             sprite_sheet: sheet.clone(),
             sprite_number: 0,
         };
-        for _ in 0..1 {
+
+        world.create_entity()
+            .with(renderer.clone())
+            .with(Transform::default())
+            .with(components::PlayerTag{})
+            .with(components::Velocity {
+                speed: 0.0f32,
+                rotation: 0.0f32
+            }).build();
+
+        for _ in 0..10 {
+            let vel = components::Velocity {
+                speed: 0.0f32,
+                rotation: 0.0f32
+            };
+            let mut tr = Transform::default();
+            tr.append_translation_xyz(rand::random::<f32>() * ARENA_WIDTH, rand::random::<f32>() * ARENA_HEIGHT, 0.0);
             world.create_entity()
                 .with(renderer.clone())
-                .with(Transform::default())
-                .with(components::PlayerTag{})
-                .with(components::Velocity { dx: 0f32, dy: 0f32})
+                .with(tr)
+                .with(components::AITag{})
+                .with(vel)
                 .build();
         }
     }
@@ -86,8 +102,6 @@ fn main() -> amethyst::Result<()> {
 
     let app_root = application_root_dir()?;
 
-
-
     let config_dir = app_root.join("config");
     let display_config_path = config_dir.join("display.ron");
     let binding_path = config_dir.join("bindings.ron");
@@ -107,7 +121,8 @@ fn main() -> amethyst::Result<()> {
                 .with_bindings_from_file(binding_path)?
         )?
         .with(systems::InputSystem, "inputs_system", &[])
-        .with(systems::MoveSystem, "moves_system", &["inputs_system"]);
+        .with(systems::AISystem, "ai_system", &[])
+        .with(systems::MoveSystem, "moves_system", &["inputs_system", "ai_system"]);
 
     let mut game = Application::new(app_root.join("assets"), MyState, game_data)?;
     game.run();
