@@ -12,13 +12,12 @@ use amethyst::{
     assets::{AssetStorage, Loader, Handle},
 };
 
-
-
 mod systems;
 mod components;
 
-pub const ARENA_HEIGHT: f32 = 100.0;
-pub const ARENA_WIDTH: f32 = 100.0;
+pub const ARENA_HEIGHT: f32 = 400.0;
+pub const ARENA_WIDTH: f32 = 400.0;
+pub const AGENTS: i32 = 400;
 
 struct MyState;
 
@@ -33,28 +32,42 @@ impl SimpleState for MyState {
             sprite_sheet: sheet.clone(),
             sprite_number: 0,
         };
+        let renderer2 = SpriteRender {
+            sprite_sheet: sheet.clone(),
+            sprite_number: 1,
+        };
 
         world.create_entity()
             .with(renderer.clone())
             .with(Transform::default())
             .with(components::PlayerTag{})
+            .with(components::Ship {
+                id: 0,
+                x: 0f32,
+                y: 0f32,
+                rotation: 0f32,
+            })
             .with(components::Velocity {
-                speed: 0.0f32,
-                rotation: 0.0f32
+                dx: 0f32,
+                dy: 0f32,
             }).build();
 
-        for _ in 0..10 {
-            let vel = components::Velocity {
-                speed: 0.0f32,
-                rotation: 0.0f32
-            };
-            let mut tr = Transform::default();
-            tr.append_translation_xyz(rand::random::<f32>() * ARENA_WIDTH, rand::random::<f32>() * ARENA_HEIGHT, 0.0);
+        for i in 0..AGENTS {
+            
             world.create_entity()
-                .with(renderer.clone())
-                .with(tr)
+                .with(renderer2.clone())
+                .with(Transform::default())
                 .with(components::AITag{})
-                .with(vel)
+                .with(components::Velocity {
+                    dx: rand::random::<f32>() * 2.0 - 1.0,
+                    dy: rand::random::<f32>() * 2.0 - 1.0,
+                })
+                .with(components::Ship {
+                    id: i + 1,
+                    x: rand::random::<f32>() * ARENA_WIDTH, 
+                    y: rand::random::<f32>() * ARENA_HEIGHT,
+                    rotation: 0.0
+                })
                 .build();
         }
     }
