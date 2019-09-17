@@ -1,0 +1,9 @@
+(
+  axes: {
+    "speed": Emulated(pos: Key(W), neg: Key(S)),
+    "leftright": Emulated(pos: Key(A), neg: Key(D)),    
+  },
+  actions: {
+      "fire": [[Key(Space)]],
+  },
+)
