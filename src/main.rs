@@ -15,9 +15,9 @@ use amethyst::{
 mod systems;
 mod components;
 
-pub const ARENA_HEIGHT: f32 = 400.0;
-pub const ARENA_WIDTH: f32 = 400.0;
-pub const AGENTS: i32 = 400;
+pub const ARENA_HEIGHT: f32 = 200.0;
+pub const ARENA_WIDTH: f32 = 200.0;
+pub const AGENTS: i32 = 80;
 
 struct MyState;
 
@@ -36,23 +36,23 @@ impl SimpleState for MyState {
             sprite_sheet: sheet.clone(),
             sprite_number: 1,
         };
-
-        world.create_entity()
-            .with(renderer.clone())
-            .with(Transform::default())
-            .with(components::PlayerTag{})
-            .with(components::Ship {
-                id: 0,
-                x: 0f32,
-                y: 0f32,
-                rotation: 0f32,
-            })
-            .with(components::Velocity {
-                dx: 0f32,
-                dy: 0f32,
-            }).build();
-
-        for i in 0..AGENTS {
+        for i in 0..10 {
+            world.create_entity()
+                .with(renderer.clone())
+                .with(Transform::default())
+                .with(components::PlayerTag{})
+                .with(components::Ship {
+                    id: i,
+                    x: 0f32,
+                    y: (i * 20) as f32,
+                    rotation: 0f32,
+                })
+                .with(components::Velocity {
+                    dx: 0f32,
+                    dy: 0f32,
+                }).build();
+        }
+        for i in 10..(10+AGENTS) {
             
             world.create_entity()
                 .with(renderer2.clone())

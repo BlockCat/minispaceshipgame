@@ -11,8 +11,8 @@ pub struct AISystem;
 
 const TWO_PI: f32 = std::f32::consts::PI * 2.0;
 const ALIGNMENT_RANGE: f32 = 15.0;
-const COHESION_RANGE: f32 = 15.0;
-const SEPARATION_RANGE: f32 = 14.0;
+const COHESION_RANGE: f32 = 20.0;
+const SEPARATION_RANGE: f32 = 10.0;
 const MAX_SPEED: f32 = 1.0;
 
 
@@ -67,9 +67,8 @@ impl<'a> System<'a> for AISystem {
             let result = (&velocities, &ships).join()
             .filter(move |(_, o_ship)| {
                 o_ship.id != ship.id && distance_squared(o_ship, ship) <= ALIGNMENT_RANGE * ALIGNMENT_RANGE
-            }).map(|(o_vel, o_ship)| {
-                let multiplier = if o_ship.id == 0 { 10.0} else { 1.0 };
-                (o_vel.dx * multiplier, o_vel.dy * multiplier)
+            }).map(|(o_vel, _)| {                
+                (o_vel.dx, o_vel.dy)
             }).fold((0.0, 0.0, 0), |(total_dx, total_dy, counter), (dx, dy)| {
                 (total_dx + dx, total_dy + dy, counter + 1)
             });
@@ -86,12 +85,13 @@ impl<'a> System<'a> for AISystem {
             .filter(move |(_, o_ship)| {
                 o_ship.id != ship.id && distance_squared(o_ship, ship) <= COHESION_RANGE * COHESION_RANGE
             }).map(|(_, o_ship)| {
-                (o_ship.x, o_ship.y)
+                let a = distance_xy(ship, o_ship);
+                (ship.x + a.0, ship.y + a.0)
             }).fold((0.0, 0.0, 0), |(total_x, total_y, counter), (x, y)| {
                 (total_x + x, total_y + y, counter + 1)
             });
             if result.2 == 0 { 
-                (0.0, 0.0)
+                (ship.x, ship.y)
             } else { 
                 (result.0 / result.2 as f32 - ship.x, result.1 / result.2 as f32 - ship.y).normalize().unwrap_or((0.0, 0.0))
             }
@@ -100,13 +100,11 @@ impl<'a> System<'a> for AISystem {
 
         let separation = (&velocities, &ships, &tags).join() 
         .map(|(_, ship, _)| {
-            let my_x = ship.x;
-            let my_y = ship.y;
             let result = (&velocities, &ships).join()
             .filter(move |(_, o_ship)| {
                 ship.id != o_ship.id && distance_squared(o_ship, ship) <= SEPARATION_RANGE * SEPARATION_RANGE
             }).map(|(_, o_ship)| {
-                (o_ship.x - my_x, o_ship.y - my_y)
+                distance_xy(ship, o_ship)                
             }).fold((0.0, 0.0), |(total_x, total_y), (x, y)| {
                 (total_x + x, total_y + y)
             });
@@ -116,15 +114,14 @@ impl<'a> System<'a> for AISystem {
         for ((((velocity, ship, _), (adx, ady)), (cx, cy)), (sdx, sdy)) in (&mut velocities, &mut ships, &tags).join().zip(alignment).zip(cohesion).zip(separation) {
             let (cohesion_dx, cohesion_dy) = (cx - ship.x, cy - ship.y).normalize().unwrap_or((0.0, 0.0)); 
             
-            let cohesion_weight = 1.0;
-            let alignment_weight = 1.0;
+            let cohesion_weight = 0.1;
+            let alignment_weight = 2.0;
             let separation_weight = 1.0;
 
-            let dx = adx * alignment_weight + cohesion_dx * cohesion_weight + sdx * separation_weight;
-            let dy = ady * alignment_weight + cohesion_dy * cohesion_weight + sdy * separation_weight;
+            let new_velocity = (adx * alignment_weight + cohesion_dx * cohesion_weight + sdx * separation_weight, ady * alignment_weight + cohesion_dy * cohesion_weight + sdy * separation_weight).normalize().unwrap_or((0.0, 0.0));
 
-            velocity.dx += dx;
-            velocity.dy += dy;
+            velocity.dx += new_velocity.0;
+            velocity.dy += new_velocity.1;
             velocity.normalize();
             ship.rotation = velocity.dy.atan2(velocity.dx);
 
@@ -156,26 +153,24 @@ fn limit_rotation(ship: &mut Ship) {
     }
 }
 
-fn distance_squared(a: &Ship, b: &Ship) -> f32 {
+fn distance_xy(a: &Ship, b: &Ship) -> (f32, f32) {
     let (width, height) = (crate::ARENA_WIDTH, crate::ARENA_HEIGHT);
     let (ax, ay): (f32, f32) = (a.x, a.y);
     let (bx, by): (f32, f32) = (b.x, b.y);
 
-    let min_x = if ax < bx { ax } else { bx };
-    let max_x = if ax > bx { ax } else { bx };
+    let adx = bx - ax; // Distance between point within range
+    let bdx = bx + width - ax; // Distance point to edges
 
-    let min_y = if ay < by { ay } else { by };
-    let max_y = if ay > by { ay } else { by };
+    let ady = by - ay;
+    let bdy = by + height - ay;
     
-    let dx1 = max_x - min_x;
-    let dx2 = min_x + (width - max_x);
+    let dx = if adx.abs() < bdx.abs() { adx } else { bdx };
+    let dy = if ady.abs() < bdy.abs() { ady } else { bdy };    
 
-    let dy1 = max_y - min_y;
-    let dy2 = min_y + (height - max_y);
-
-    let min_dx = if dx1 < dx2 { dx1 } else { dx2 };
-    let min_dy = if dy1 < dy2 { dy1 } else { dy2 };
-
+    (dx, dy)
+}
+fn distance_squared(a: &Ship, b: &Ship) -> f32 {
+    let (min_dx, min_dy) = distance_xy(a, b);
     min_dx.powi(2) + min_dy.powi(2)
 }
 

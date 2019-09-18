@@ -32,4 +32,5 @@ impl Ship {
     pub fn set_rotation(&mut self, rotation: f32) {
         self.rotation = rotation;
     }
+
 }
