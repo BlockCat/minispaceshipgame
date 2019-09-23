@@ -1,13 +1,13 @@
-use amethyst::ecs::{Component, NullStorage};
+use amethyst::ecs::{Component, NullStorage, DenseVecStorage};
 
 #[derive(Default)]
-pub struct PlayerTag;
+pub struct PlayerTag(pub bool);
 
 #[derive(Default)]
 pub struct AITag;
 
 impl Component for PlayerTag {
-    type Storage = NullStorage<Self>;
+    type Storage = DenseVecStorage<Self>;
 }
 
 impl Component for AITag {

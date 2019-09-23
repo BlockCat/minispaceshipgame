@@ -1,9 +1,12 @@
 (
   axes: {
-    "speed": Emulated(pos: Key(W), neg: Key(S)),
-    "leftright": Emulated(pos: Key(A), neg: Key(D)),    
+    "speed_1": Emulated(pos: Key(W), neg: Key(S)),
+    "leftright_1": Emulated(pos: Key(A), neg: Key(D)),    
+    "speed_2": Emulated(pos: Key(I), neg: Key(K)),
+    "leftright_2": Emulated(pos: Key(J), neg: Key(L)),    
   },
   actions: {
       "fire": [[Key(Space)]],
+      "slowmo": [[Key(R)]],
   },
 )

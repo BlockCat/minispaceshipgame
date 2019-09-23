@@ -13,7 +13,7 @@ const TWO_PI: f32 = std::f32::consts::PI * 2.0;
 const ALIGNMENT_RANGE: f32 = 15.0;
 const COHESION_RANGE: f32 = 20.0;
 const SEPARATION_RANGE: f32 = 10.0;
-const MAX_SPEED: f32 = 1.0;
+const MAX_SPEED: f32 = 100.0;
 
 
 impl<'a> System<'a> for InputSystem {
@@ -25,9 +25,11 @@ impl<'a> System<'a> for InputSystem {
     );
 
     fn run(&mut self, (mut transforms, mut ships, tags, input): Self::SystemData) {
-        let movement = input.axis_value("speed");
-        let leftright = input.axis_value("leftright");
-        for (velocity, ship, _) in (&mut transforms, &mut ships, &tags).join() {
+        
+        for (velocity, ship, pp) in (&mut transforms, &mut ships, &tags).join() {
+            
+            let movement = if pp.0 { input.axis_value("speed_1") } else { input.axis_value("speed_2") };
+            let leftright = if pp.0 { input.axis_value("leftright_1") } else { input.axis_value("leftright_2")};
 
             if let Some(lr) = leftright {
                 ship.rotation += lr * 0.1;
@@ -38,8 +40,8 @@ impl<'a> System<'a> for InputSystem {
                 let dy = ship.rotation.sin();
 
                 if mv > 0.0 {
-                    velocity.dx += dx * 0.1;
-                    velocity.dy += dy * 0.1;
+                    velocity.dx += dx * 2.1;
+                    velocity.dy += dy * 2.1;
                 }
                 if mv < 0.0 {
                     velocity.dx -= dx * 0.2;
@@ -104,7 +106,7 @@ impl<'a> System<'a> for AISystem {
             .filter(move |(_, o_ship)| {
                 ship.id != o_ship.id && distance_squared(o_ship, ship) <= SEPARATION_RANGE * SEPARATION_RANGE
             }).map(|(_, o_ship)| {
-                distance_xy(ship, o_ship)                
+                dbg!(distance_xy(ship, o_ship))
             }).fold((0.0, 0.0), |(total_x, total_y), (x, y)| {
                 (total_x + x, total_y + y)
             });
@@ -114,8 +116,8 @@ impl<'a> System<'a> for AISystem {
         for ((((velocity, ship, _), (adx, ady)), (cx, cy)), (sdx, sdy)) in (&mut velocities, &mut ships, &tags).join().zip(alignment).zip(cohesion).zip(separation) {
             let (cohesion_dx, cohesion_dy) = (cx - ship.x, cy - ship.y).normalize().unwrap_or((0.0, 0.0)); 
             
-            let cohesion_weight = 0.1;
-            let alignment_weight = 2.0;
+            let cohesion_weight = 0.0;
+            let alignment_weight = 1.0;
             let separation_weight = 1.0;
 
             let new_velocity = (adx * alignment_weight + cohesion_dx * cohesion_weight + sdx * separation_weight, ady * alignment_weight + cohesion_dy * cohesion_weight + sdy * separation_weight).normalize().unwrap_or((0.0, 0.0));
@@ -123,7 +125,10 @@ impl<'a> System<'a> for AISystem {
             velocity.dx += new_velocity.0;
             velocity.dy += new_velocity.1;
             velocity.normalize();
-            ship.rotation = velocity.dy.atan2(velocity.dx);
+            velocity.dx *= MAX_SPEED;
+            velocity.dy *= MAX_SPEED;
+            ship.rotation = velocity.dy.atan2(velocity.dx);           
+            
 
             limit_velocity(velocity);
             limit_rotation(ship);
@@ -139,6 +144,9 @@ fn limit_velocity(velocity: &mut Velocity) {
         velocity.dx *= speed;
         velocity.dy *= speed;
     }
+
+    velocity.dx *= 0.99;
+    velocity.dy *= 0.99;
     
    
 }
@@ -159,13 +167,13 @@ fn distance_xy(a: &Ship, b: &Ship) -> (f32, f32) {
     let (bx, by): (f32, f32) = (b.x, b.y);
 
     let adx = bx - ax; // Distance between point within range
-    let bdx = bx + width - ax; // Distance point to edges
+    let bdx = bx + (width - ax); // Distance point to edges
 
     let ady = by - ay;
-    let bdy = by + height - ay;
+    let bdy = by + (height - ay);
     
     let dx = if adx.abs() < bdx.abs() { adx } else { bdx };
-    let dy = if ady.abs() < bdy.abs() { ady } else { bdy };    
+    let dy = if ady.abs() < bdy.abs() { ady } else { bdy };
 
     (dx, dy)
 }

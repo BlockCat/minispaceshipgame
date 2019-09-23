@@ -17,7 +17,8 @@ mod components;
 
 pub const ARENA_HEIGHT: f32 = 200.0;
 pub const ARENA_WIDTH: f32 = 200.0;
-pub const AGENTS: i32 = 80;
+pub const PLAYERS: i32 = 4;
+pub const AGENTS: i32 = 40;
 
 struct MyState;
 
@@ -36,11 +37,11 @@ impl SimpleState for MyState {
             sprite_sheet: sheet.clone(),
             sprite_number: 1,
         };
-        for i in 0..10 {
+        for i in 0..PLAYERS / 2 {
             world.create_entity()
                 .with(renderer.clone())
                 .with(Transform::default())
-                .with(components::PlayerTag{})
+                .with(components::PlayerTag(true))
                 .with(components::Ship {
                     id: i,
                     x: 0f32,
@@ -52,7 +53,24 @@ impl SimpleState for MyState {
                     dy: 0f32,
                 }).build();
         }
-        for i in 10..(10+AGENTS) {
+
+        for i in PLAYERS/2..PLAYERS {
+            world.create_entity()
+                .with(renderer.clone())
+                .with(Transform::default())
+                .with(components::PlayerTag(false))
+                .with(components::Ship {
+                    id: i,
+                    x: 0f32,
+                    y: (i * 20) as f32,
+                    rotation: 0f32,
+                })
+                .with(components::Velocity {
+                    dx: 0f32,
+                    dy: 0f32,
+                }).build();
+        }
+        for i in PLAYERS..(PLAYERS+AGENTS) {
             
             world.create_entity()
                 .with(renderer2.clone())
